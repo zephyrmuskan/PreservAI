@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PreservAI – AI Powered Cold Chain Prevention & Intelligence Platform</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Chart.js UMD -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header>
+    <div class="logo-container">
+      <div class="logo-logo">P</div>
+      <span class="logo-text">PreservAI</span>
+    </div>
+    
+    <nav class="main-nav">
+      <div class="nav-item active" data-tab="dashboard">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" data-tab="shipments">
+        <svg viewBox="0 0 24 24"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-4.414a1 1 0 0 0-.293-.707l-2.586-2.586A1 1 0 0 0 18.414 9H15"/><circle cx="7.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
+        Shipments
+      </div>
+      <div class="nav-item" data-tab="tags">
+        <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Smart Tags
+      </div>
+      <div class="nav-item" data-tab="crates">
+        <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        Smart Crates
+      </div>
+      <div class="nav-item" data-tab="analytics">
+        <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
+        Analytics
+      </div>
+      <div class="nav-item" data-tab="alerts">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Alerts
+      </div>
+      <div class="nav-item" data-tab="health">
+        <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Product Health
+      </div>
+      <div class="nav-item" data-tab="settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </div>
+    </nav>
+    
+    <div class="header-right">
+      <div class="org-selector">
+        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        <select id="organization-select">
+          <option value="global">Cipla Global Logistics</option>
+          <option value="biocon">Biocon Research Labs</option>
+          <option value="serum">Serum Institute India</option>
+          <option value="max">Max Health India</option>
+        </select>
+      </div>
+      
+      <button class="icon-btn" id="theme-toggle" title="Toggle Light/Dark Mode">
+        <svg viewBox="0 0 24 24"><path d="M12 3a6.364 6.364 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+      </button>
+      
+      <button class="icon-btn" id="notifications-btn" title="Alert Notifications">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="badge-dot" id="noti-badge"></span>
+      </button>
+      
+      <div class="user-profile">
+        <img class="user-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100" alt="User profile image">
+        <div class="user-info">
+          <span class="user-name">Dr. Ananya Iyer</span>
+          <span class="user-role">Cold Chain Director</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Master Layout -->
+  <main class="main-content">
+    
+    <!-- KPI CARDS PANEL -->
+    <section class="kpi-container">
+      <div class="kpi-card blue">
+        <div class="kpi-header">
+          <span>Active Shipments</span>
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><polyline points="15 18 9 18"/><path d="M19 18h2a1 1 0 0 0 1-1v-4.414a1 1 0 0 0-.293-.707l-2.586-2.586A1 1 0 0 0 18.414 9H15"/><circle cx="7.5" cy="18.5" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpi-active-shipments">1,254</div>
+        <div class="kpi-trend up">
+          <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="3" fill="none"><polyline points="18 15 12 9 6 15"/></svg>
+          +4.2% <span style="color:var(--text-muted);font-weight:400;margin-left:4px;">vs yesterday</span>
+        </div>
+      </div>
+      
+      <div class="kpi-card safe">
+        <div class="kpi-header">
+          <span>Product Health</span>
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpi-product-health">96%</div>
+        <div class="kpi-trend up">
+          <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="3" fill="none"><polyline points="18 15 12 9 6 15"/></svg>
+          +0.8% <span style="color:var(--text-muted);font-weight:400;margin-left:4px;">target reached</span>
+        </div>
+      </div>
+      
+      <div class="kpi-card warning">
+        <div class="kpi-header">
+          <span>Avg Risk Score</span>
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpi-risk-score">12%</div>
+        <div class="kpi-trend down">
+          <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="3" fill="none"><polyline points="6 9 12 15 18 9"/></svg>
+          -2.4% <span style="color:var(--text-muted);font-weight:400;margin-left:4px;">lower risk</span>
+        </div>
+      </div>
+      
+      <div class="kpi-card teal">
+        <div class="kpi-header">
+          <span>Spoilage Prevented</span>
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpi-spoilage-prevented">₹2.8 Cr</div>
+        <div class="kpi-trend up">
+          <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="3" fill="none"><polyline points="18 15 12 9 6 15"/></svg>
+          +₹42L <span style="color:var(--text-muted);font-weight:400;margin-left:4px;">this month</span>
+        </div>
+      </div>
+      
+      <div class="kpi-card blue">
+        <div class="kpi-header">
+          <span>Active Smart Tags</span>
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpi-smart-tags">8,920</div>
+        <div class="kpi-trend up">
+          <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="3" fill="none"><polyline points="18 15 12 9 6 15"/></svg>
+          99.8% <span style="color:var(--text-muted);font-weight:400;margin-left:4px;">online</span>
+        </div>
+      </div>
+      
+      <div class="kpi-card teal">
+        <div class="kpi-header">
+          <span>Active Smart Crates</span>
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpi-smart-crates">542</div>
+        <div class="kpi-trend up">
+          <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="3" fill="none"><polyline points="18 15 12 9 6 15"/></svg>
+          +12 <span style="color:var(--text-muted);font-weight:400;margin-left:4px;">provisioned</span>
+        </div>
+      </div>
+      
+      <div class="kpi-card safe">
+        <div class="kpi-header">
+          <span>CO₂ Saved</span>
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpi-co2-saved">18.6 Tons</div>
+        <div class="kpi-trend up">
+          <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="3" fill="none"><polyline points="18 15 12 9 6 15"/></svg>
+          +1.2T <span style="color:var(--text-muted);font-weight:400;margin-left:4px;">this week</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================
+         TAB PANEL 1: DASHBOARD (DEFAULT VIEW)
+         ============================================== -->
+    <section id="tab-dashboard" class="tab-panel active-tab">
+      <div class="dashboard-grid">
+        
+        <!-- LEFT COLUMN (MAP, TABLE, ENVIRONMENT CHARTS) -->
+        <div class="col-left">
+          
+          <!-- LIVE INDIA MAP -->
+          <div class="card-panel">
+            <div class="card-title-bar">
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/></svg>
+                Real-Time Cold Chain Map (India Network)
+              </div>
+              <div class="filter-actions">
+                <select class="filter-select" id="map-filter-type">
+                  <option value="all">All Shipments & Facilities</option>
+                  <option value="Vaccine">Vaccines Only</option>
+                  <option value="Pharma">Pharmaceuticals Only</option>
+                  <option value="Food">Food Logistics</option>
+                  <option value="Warehouse">Warehouses / Cold Hubs</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="map-container">
+              <div id="india-map"></div>
+              <div class="map-overlay-legend">
+                <div class="legend-item">
+                  <span class="legend-dot green"></span> Safe Status
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot orange"></span> Thermal/Shock Warning
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot red"></span> Critical Excursion Risk
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- SMART TAG MONITORING -->
+          <div class="card-panel">
+            <div class="card-title-bar">
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                Live Smart Tag Monitoring
+              </div>
+            </div>
+            
+            <div class="filter-search-row">
+              <div class="search-input-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="tag-search" placeholder="Search Tag ID or Shipment Name...">
+              </div>
+              <div class="filter-actions">
+                <select class="filter-select" id="tag-filter-status">
+                  <option value="all">All Statuses</option>
+                  <option value="Safe">Safe</option>
+                  <option value="Warning">Warning</option>
+                  <option value="Critical">Critical</option>
+                </select>
+                <select class="filter-select" id="tag-filter-battery">
+                  <option value="all">Battery Levels</option>
+                  <option value="high">High (> 80%)</option>
+                  <option value="mid">Medium (30% - 80%)</option>
+                  <option value="low">Critical Low (< 30%)</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="table-responsive">
+              <table class="data-table" id="tag-monitoring-table">
+                <thead>
+                  <tr>
+                    <th>Tag ID</th>
+                    <th>Shipment</th>
+                    <th>Temperature</th>
+                    <th>Humidity</th>
+                    <th>Shock</th>
+                    <th>GPS Status</th>
+                    <th>Battery</th>
+                    <th>Risk Score</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="tag-table-body">
+                  <!-- Generated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- LIVE ENVIRONMENTAL MONITORING -->
+          <div class="card-panel">
+            <div class="card-title-bar">
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                Live Telemetry Streams (Active Shipment Focus)
+              </div>
+              <select class="filter-select" id="live-charts-focus-select" style="min-width:180px;">
+                <!-- Filled dynamically by JS -->
+              </select>
+            </div>
+            
+            <div class="charts-grid">
+              <div class="chart-wrapper">
+                <div class="chart-header">
+                  <span>Temperature Trend</span>
+                  <span class="chart-value-highlight" id="chart-val-temp">0.0°C</span>
+                </div>
+                <div class="chart-canvas-container">
+                  <canvas id="chart-temp-trend"></canvas>
+                </div>
+              </div>
+              
+              <div class="chart-wrapper">
+                <div class="chart-header">
+                  <span>Humidity Trend</span>
+                  <span class="chart-value-highlight" id="chart-val-humidity">0%</span>
+                </div>
+                <div class="chart-canvas-container">
+                  <canvas id="chart-humidity-trend"></canvas>
+                </div>
+              </div>
+              
+              <div class="chart-wrapper">
+                <div class="chart-header">
+                  <span>Vibration & Shock Events</span>
+                  <span class="chart-value-highlight" id="chart-val-shock">0.0 G</span>
+                </div>
+                <div class="chart-canvas-container">
+                  <canvas id="chart-shock-events"></canvas>
+                </div>
+              </div>
+              
+              <div class="chart-wrapper">
+                <div class="chart-header">
+                  <span>Battery Performance Curve</span>
+                  <span class="chart-value-highlight" id="chart-val-battery">0%</span>
+                </div>
+                <div class="chart-canvas-container">
+                  <canvas id="chart-battery-curve"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+        
+        <!-- RIGHT COLUMN (GAUGES, CRATES, RISK, ALERTS) -->
+        <div class="col-right">
+          
+          <!-- AI PRODUCT HEALTH PANEL -->
+          <div class="card-panel">
+            <div class="card-title-bar">
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                AI Product Health Status
+              </div>
+            </div>
+            
+            <div class="health-meter-container">
+              <div class="gauge-circular">
+                <svg viewBox="0 0 100 100">
+                  <defs>
+                    <linearGradient id="gauge-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="var(--primary-teal)" />
+                      <stop offset="100%" stop-color="var(--primary-blue)" />
+                    </linearGradient>
+                  </defs>
+                  <circle class="gauge-bg" cx="50" cy="50" r="40" />
+                  <circle class="gauge-progress" id="health-gauge-svg" cx="50" cy="50" r="40" />
+                </svg>
+                <div class="gauge-value" id="health-gauge-val">96%</div>
+              </div>
+              <div class="health-status-details">
+                <span class="status-badge healthy" id="health-status-pill">Healthy</span>
+                <div class="health-status-title" id="health-status-title">Ideal Preservation</div>
+              </div>
+            </div>
+            
+            <div class="metrics-list">
+              <div class="metric-row">
+                <div class="metric-label">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  Remaining Shelf Life
+                </div>
+                <div class="metric-value" id="health-metric-shelf-life">14 Days</div>
+              </div>
+              
+              <div class="metric-row">
+                <div class="metric-label">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                  Spoilage Probability
+                </div>
+                <div class="metric-value" id="health-metric-spoilage-prob">32%</div>
+              </div>
+              
+              <div class="metric-row">
+                <div class="metric-label">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  Temperature Stability
+                </div>
+                <div class="metric-value" id="health-metric-temp-stability">84%</div>
+              </div>
+              
+              <div class="metric-row">
+                <div class="metric-label">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  Shock Exposure (Mechanical)
+                </div>
+                <div class="metric-value" id="health-metric-shock">12%</div>
+              </div>
+              
+              <div class="metric-row">
+                <div class="metric-label">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                  Cooling Capacity Remaining
+                </div>
+                <div class="metric-value" id="health-metric-cooling-cap">82%</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- SMART CRATE INTELLIGENCE -->
+          <div class="card-panel">
+            <div class="card-title-bar">
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                Smart Crate IoT Health
+              </div>
+            </div>
+            
+            <div class="metrics-list">
+              <div class="metric-row">
+                <div class="metric-label">
+                  PCM Health (Active cooling)
+                </div>
+                <div class="metric-value" id="crate-pcm-health">82%</div>
+              </div>
+              
+              <div class="metric-row">
+                <div class="metric-label">
+                  Cooling Autonomy Remaining
+                </div>
+                <div class="metric-value" id="crate-cooling-remaining" style="color: var(--status-warning); font-weight:800;">18 Hours</div>
+              </div>
+              
+              <div class="metric-row">
+                <div class="metric-label">
+                  Internal Core Temp
+                </div>
+                <div class="metric-value" id="crate-internal-temp">4.2°C</div>
+              </div>
+              
+              <div class="metric-row">
+                <div class="metric-label">
+                  Humidity (Internal Envelope)
+                </div>
+                <div class="metric-value" id="crate-humidity">61%</div>
+              </div>
+              
+              <div class="metric-row">
+                <div class="metric-label">
+                  Li-Ion Smart Crate Battery
+                </div>
+                <div class="metric-value" id="crate-battery">93%</div>
+              </div>
+            </div>
+            
+            <div class="harvesting-grid">
+              <div class="harvesting-badge active" id="crate-harvest-solar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                Solar Harvest
+              </div>
+              
+              <div class="harvesting-badge active" id="crate-harvest-vibration">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                Kinetic Harvest
+              </div>
+            </div>
+          </div>
+          
+          <!-- AI RISK PREDICTION CENTER -->
+          <div class="card-panel ai-risk-card">
+            <div class="card-title-bar">
+              <div class="card-title" style="color: var(--primary-blue)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                AI Risk Prediction Center
+              </div>
+            </div>
+            
+            <div class="ai-risk-score-display">
+              <div class="ai-score-box">
+                <div class="ai-score-lbl">Risk Score</div>
+                <div class="ai-score-val risk" id="ai-card-risk-score">68%</div>
+              </div>
+              
+              <div class="ai-score-box">
+                <div class="ai-score-lbl">Spoilage Prob</div>
+                <div class="ai-score-val spoilage" id="ai-card-spoilage-prob">32%</div>
+              </div>
+            </div>
+            
+            <div class="ai-fail-time">
+              Expected Failure Time: <span id="ai-card-fail-time">3 hours 45 mins</span>
+            </div>
+            
+            <div class="ai-recommendation-box">
+              <div class="ai-recommendation-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                Recommended Preventive Action
+              </div>
+              <div id="ai-card-recommendation">"Transfer shipment to nearest cold storage within 4 hours."</div>
+            </div>
+          </div>
+          
+          <!-- ALERTS CENTER -->
+          <div class="card-panel">
+            <div class="card-title-bar">
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                Critical Alerts Feed
+              </div>
+            </div>
+            
+            <div class="alerts-list-vertical" id="dashboard-alerts-feed">
+              <!-- Loaded by JS -->
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================
+         TAB PANEL 2: SHIPMENTS LISTING
+         ============================================== -->
+    <section id="tab-shipments" class="tab-panel">
+      <div class="card-panel">
+        <div class="card-title-bar">
+          <div class="card-title">Active Transits & Storage Logistics</div>
+          <div class="filter-actions">
+            <select class="filter-select" id="shipments-filter-type">
+              <option value="all">All Types</option>
+              <option value="Vaccine">Vaccines</option>
+              <option value="Pharma">Pharmaceuticals</option>
+              <option value="Food">Food / Agritech</option>
+              <option value="Warehouse">Warehouse Facilities</option>
+            </select>
+            <select class="filter-select" id="shipments-filter-status">
+              <option value="all">All Statuses</option>
+              <option value="Safe">Safe</option>
+              <option value="Warning">Warning</option>
+              <option value="Critical">Critical</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="data-table" id="shipments-main-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Shipment Label</th>
+                <th>Type</th>
+                <th>Origin Node</th>
+                <th>Destination Node</th>
+                <th>Core Temp</th>
+                <th>Battery</th>
+                <th>Risk Index</th>
+                <th>Autonomy</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="shipments-table-body">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================
+         TAB PANEL 3: SMART TAGS INVENTORY
+         ============================================== -->
+    <section id="tab-tags" class="tab-panel">
+      <div class="card-panel">
+        <div class="card-title-bar">
+          <div class="card-title">Bluetooth/NB-IoT Smart Tags Inventory</div>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="data-table" id="smart-tags-inventory-table">
+            <thead>
+              <tr>
+                <th>Tag ID</th>
+                <th>Linked Shipment</th>
+                <th>Ambient Temperature</th>
+                <th>RH Humidity</th>
+                <th>Max G-Force Shock</th>
+                <th>Cellular Network</th>
+                <th>Battery Level</th>
+                <th>Alert Status</th>
+              </tr>
+            </thead>
+            <tbody id="tags-inventory-body">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================
+         TAB PANEL 4: SMART CRATES
+         ============================================== -->
+    <section id="tab-crates" class="tab-panel">
+      <div class="card-panel">
+        <div class="card-title-bar">
+          <div class="card-title">Dry-Ice / PCM Active Smart Crates</div>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="data-table" id="smart-crates-table">
+            <thead>
+              <tr>
+                <th>Crate ID</th>
+                <th>Linked Cargo</th>
+                <th>PCM Charge Status</th>
+                <th>Cooling Autonomy</th>
+                <th>Core Chamber Temp</th>
+                <th>Humidity</th>
+                <th>Active Energy Harvesting</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="crates-table-body">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================
+         TAB PANEL 5: COLD CHAIN ANALYTICS
+         ============================================== -->
+    <section id="tab-analytics" class="tab-panel">
+      <div class="analytics-grid-top">
+        <div class="card-panel">
+          <div class="card-title">Spoilage Reduction (%) vs Standard Logistics</div>
+          <div class="analytics-card-large-canvas">
+            <canvas id="chart-ana-spoilage"></canvas>
+          </div>
+        </div>
+        
+        <div class="card-panel">
+          <div class="card-title">Active Product Health Trends</div>
+          <div class="analytics-card-large-canvas">
+            <canvas id="chart-ana-health"></canvas>
+          </div>
+        </div>
+        
+        <div class="card-panel">
+          <div class="card-title">Current Risk Distribution</div>
+          <div class="analytics-card-large-canvas">
+            <canvas id="chart-ana-risk"></canvas>
+          </div>
+        </div>
+      </div>
+      
+      <div class="analytics-grid-bottom">
+        <div class="card-panel">
+          <div class="card-title">Route Compliance & Thermal Performance Score</div>
+          <div class="analytics-card-large-canvas">
+            <canvas id="chart-ana-routes"></canvas>
+          </div>
+        </div>
+        
+        <div class="card-panel">
+          <div class="card-title">7-Day Cold Chain Compliance Index</div>
+          <div class="compliance-big-score">
+            <div class="compliance-big-num">96.8%</div>
+            <div class="compliance-desc">SLA Compliance Index Target: 95.0% (Passed)</div>
+          </div>
+          <div class="analytics-card-large-canvas" style="height: 120px;">
+            <canvas id="chart-ana-compliance"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================
+         TAB PANEL 6: ALERTS HISTORY
+         ============================================== -->
+    <section id="tab-alerts" class="tab-panel">
+      <div class="card-panel">
+        <div class="card-title">Platform Operations Event & Excursion Alerts Log</div>
+        <div class="table-responsive">
+          <table class="data-table" id="alerts-history-table">
+            <thead>
+              <tr>
+                <th>Priority</th>
+                <th>Time Logged</th>
+                <th>Shipment / Node</th>
+                <th>Alert Condition</th>
+                <th>Diagnostic Context</th>
+                <th>Escalation State</th>
+              </tr>
+            </thead>
+            <tbody id="alerts-history-body">
+              <!-- Loaded by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================
+         TAB PANEL 7: PRODUCT HEALTH SPECS
+         ============================================== -->
+    <section id="tab-health" class="tab-panel">
+      <div class="card-panel">
+        <div class="card-title">Kinetic Shelf-Life Modeling & Decay Metrics</div>
+        <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;">
+          PreservAI continuously calculates biochemical product degradation rates using advanced kinetic models (Arrhenius decay equations) linked to thermal history logs.
+        </div>
+        
+        <div class="table-responsive" style="margin-top: 15px;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Product Classification</th>
+                <th>Safe Temp Bracket</th>
+                <th>Max Exposure Limit</th>
+                <th>Dynamic Decay Rate</th>
+                <th>Quality Index</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Rotavirus Vaccines (V-102)</td>
+                <td>2.0°C to 8.0°C</td>
+                <td>72 Hours cumulative excursion</td>
+                <td style="color:var(--status-warning);font-weight:700;">Moderate Decay (1.2x base)</td>
+                <td><span class="status-pill Warning">78%</span></td>
+              </tr>
+              <tr>
+                <td>Covaxin Pack (V-101)</td>
+                <td>-25.0°C to -15.0°C</td>
+                <td>24 Hours excursion</td>
+                <td style="color:var(--status-safe);font-weight:700;">Optimal (1.0x base)</td>
+                <td><span class="status-pill Safe">98%</span></td>
+              </tr>
+              <tr>
+                <td>Alphonso Mango Export (F-201)</td>
+                <td>8.0°C to 12.0°C</td>
+                <td>12 Hours structural heat</td>
+                <td style="color:var(--status-critical);font-weight:700;">High Acceleration (4.5x decay)</td>
+                <td><span class="status-pill Critical">42%</span></td>
+              </tr>
+              <tr>
+                <td>Insulin Injections (P-301)</td>
+                <td>2.0°C to 8.0°C</td>
+                <td>48 Hours excursion</td>
+                <td style="color:var(--status-safe);font-weight:700;">Optimal (1.0x base)</td>
+                <td><span class="status-pill Safe">97%</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================
+         TAB PANEL 8: SETTINGS PANEL
+         ============================================== -->
+    <section id="tab-settings" class="tab-panel">
+      <div class="settings-grid">
+        <div class="settings-nav">
+          <div class="settings-nav-item active">General Configuration</div>
+          <div class="settings-nav-item">Device Management & Tags</div>
+          <div class="settings-nav-item">Alert Thresholds (SLA)</div>
+          <div class="settings-nav-item">Integrations & API Hooks</div>
+        </div>
+        
+        <div class="card-panel">
+          <div class="card-title">General Platform Config</div>
+          <div class="settings-field" style="margin-bottom: 16px;">
+            <label>Current Node / Hub Scope</label>
+            <input type="text" value="India Logistics Network Hub" readonly>
+          </div>
+          
+          <div class="settings-form-row">
+            <div class="settings-field">
+              <label>Default Temperature Band Unit</label>
+              <select>
+                <option>Celsius (°C)</option>
+                <option>Fahrenheit (°F)</option>
+              </select>
+            </div>
+            
+            <div class="settings-field">
+              <label>AI Prediction Window</label>
+              <select>
+                <option>6 Hours (Real-time)</option>
+                <option>12 Hours</option>
+                <option>24 Hours</option>
+                <option>72 Hours (Route planning)</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="settings-form-row">
+            <div class="settings-field">
+              <label>Simulation Feed Rate</label>
+              <select id="setting-sim-rate">
+                <option value="3000">Fast Update (Every 3s)</option>
+                <option value="10000">Normal (Every 10s)</option>
+                <option value="30000">Production Mode (Static)</option>
+              </select>
+            </div>
+            
+            <div class="settings-field">
+              <label>Critical Excursion Threshold</label>
+              <input type="text" value="SLA Standard 2.0°C / 8.0°C">
+            </div>
+          </div>
+          
+          <button class="settings-btn primary" id="save-settings-btn">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save Dashboard Configuration
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==============================================
+       SLIDING SHIPMENT DETAIL DRAWER
+       ============================================== -->
+  <div class="detail-drawer" id="shipment-detail-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title-details">
+        <span class="drawer-shipment-id" id="drawer-id">V-102</span>
+        <span class="drawer-shipment-name" id="drawer-name">Rotavirus Vaccine Batch #409</span>
+      </div>
+      <div class="drawer-close-btn" id="drawer-close-btn" title="Close Panel">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
+    </div>
+    
+    <div class="drawer-body">
+      <div class="drawer-meta-grid">
+        <div class="drawer-meta-card">
+          <div class="drawer-meta-lbl">Product Type</div>
+          <div class="drawer-meta-val" id="drawer-type">Vaccine</div>
+        </div>
+        <div class="drawer-meta-card">
+          <div class="drawer-meta-lbl">Risk Index</div>
+          <div class="drawer-meta-val" id="drawer-risk" style="color:var(--status-warning);">68%</div>
+        </div>
+        <div class="drawer-meta-card">
+          <div class="drawer-meta-lbl">Origin</div>
+          <div class="drawer-meta-val" id="drawer-origin" style="font-size:12px;">Serum Institute, Pune</div>
+        </div>
+        <div class="drawer-meta-card">
+          <div class="drawer-meta-lbl">Destination</div>
+          <div class="drawer-meta-val" id="drawer-destination" style="font-size:12px;">Delhi Govt Hospital, New Delhi</div>
+        </div>
+      </div>
+      
+      <div class="card-panel" style="padding: 12px; background-color: var(--bg-hover);">
+        <div class="card-title" style="font-size: 13px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+          AI Real-time Action Advisory
+        </div>
+        <div style="font-size: 12px; line-height: 1.5; margin-top: 6px;" id="drawer-advisory">
+          "Transfer shipment to nearest cold storage within 4 hours."
+        </div>
+      </div>
+
+      <div class="card-panel">
+        <div class="card-title">Crate & Tag Diagnostics</div>
+        <div class="metrics-list">
+          <div class="metric-row">
+            <span class="metric-label">PCM Crate Autonomy</span>
+            <span class="metric-value" id="drawer-crate-pcm">82%</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Smart Tag Battery</span>
+            <span class="metric-value" id="drawer-tag-battery">93%</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Dynamic Shelf Life Estimation</span>
+            <span class="metric-value" id="drawer-shelf-life" style="color:var(--status-safe);">14 Days</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-panel">
+        <div class="card-title">Alert & Excursion History</div>
+        <div class="alerts-list-vertical" id="drawer-alerts-feed" style="max-height:180px;">
+          <!-- Loaded by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================
+       FLOATING AI ASSISTANT PANEL
+       ============================================== -->
+  <div class="ai-copilot-widget" id="ai-copilot-widget">
+    
+    <!-- Collapsible Chat Box -->
+    <div class="ai-chat-window" id="ai-chat-window">
+      <div class="ai-chat-header">
+        <div class="ai-chat-header-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          PreservAI Assistant
+        </div>
+      </div>
+      
+      <div class="ai-chat-body" id="ai-chat-body">
+        <div class="ai-message assistant">
+          Hello! I'm the PreservAI Copilot. I analyze live telemetry, crate Phase Change Material health, and calculate spoilage curves.
+          <br><br>
+          Select an analysis request below or type your inquiry:
+          <div class="ai-suggestions-row">
+            <button class="ai-suggestion-bubble" data-prompt="Which shipment has the highest risk?">Which shipment has highest risk?</button>
+            <button class="ai-suggestion-bubble" data-prompt="Predict spoilage for vaccine shipment V-102.">Predict spoilage for vaccine V-102</button>
+            <button class="ai-suggestion-bubble" data-prompt="Show delayed shipments.">Show delayed shipments</button>
+            <button class="ai-suggestion-bubble" data-prompt="Recommend nearest cold storage facility.">Recommend nearest cold storage</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="ai-chat-input-row">
+        <input type="text" id="ai-chat-input" placeholder="Ask PreservAI Copilot...">
+        <button id="ai-send-btn" title="Send message">
+          <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Bubble Trigger Button -->
+    <div class="ai-copilot-bubble" id="ai-copilot-trigger" title="Open AI Assistant">
+      <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+    </div>
+    
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-title">PreservAI Dashboard Console</div>
+    <div>AI Powered Cold Chain Prevention & Intelligence Platform &copy; 2026. All rights reserved.</div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="mockData.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
