@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PreservAI – AI Powered Cold Chain Prevention & Intelligence Platform</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="styles.css">
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
@@ -11,13 +17,223 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <!-- Chart.js UMD -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
-<body>
+<body class="landing-active">
+
+  <!-- Launching Soon Overlay -->
+  <div id="launching-soon-overlay">
+    <div class="landing-background">
+      <div class="glow-sphere"></div>
+      <div class="glow-sphere-2"></div>
+      <div class="particle-field-bg" id="particle-canvas-container"></div>
+    </div>
+    
+    <div class="landing-content">
+      <div class="landing-logo-container">
+        <img src="logo.png" class="landing-logo-img" alt="PreservAI Logo">
+      </div>
+      <h1 class="landing-title">PreservAI</h1>
+      <p class="landing-subtitle">Building India's next-generation AI-powered cold chain platform for safer healthcare, food, and logistics.</p>
+      
+      <div class="team-badge-pill">
+        <span>Monitor • Predict • Prevent • Protect</span>
+      </div>
+
+      <!-- Beta Subscription Form -->
+      <form id="beta-subscribe-form" class="subscribe-form">
+        <input type="email" id="subscribe-email" placeholder="Enter your business email address" required autocomplete="off" />
+        <button type="submit" class="btn-subscribe">
+          <span>Subscribe to Beta</span>
+          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </form>
+      <div id="subscribe-msg" class="subscribe-msg"></div>
+
+      <!-- Enter Demo Mode Button -->
+      <div class="demo-trigger-container">
+        <p class="demo-hint">Explore our deep-tech cold-chain visualization</p>
+        <button id="enter-demo-btn" class="btn-demo">
+          <span class="btn-demo-glow"></span>
+          <span>Enter Immersive Demo Mode</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Immersive Demo Container -->
+  <div id="immersive-demo-container" class="hidden">
+    <!-- WebGL Canvas for Three.js -->
+    <canvas id="three-canvas"></canvas>
+    
+    <!-- Top Navigation Bar for Demo -->
+    <div class="demo-nav">
+      <div class="demo-logo-container">
+        <img src="logo.png" class="logo-logo" alt="Logo">
+        <span class="logo-text">PreservAI</span>
+        <span class="demo-badge">DEMO</span>
+      </div>
+      <div class="demo-progress-container">
+        <div class="demo-progress-bar" id="demo-progress-bar"></div>
+      </div>
+      <button class="exit-demo-btn" id="exit-demo-btn">
+        <span>Exit Demo</span>
+      </button>
+    </div>
+
+    <!-- Scroll Chapters Overlay -->
+    <div id="scroll-chapters">
+     <!-- Scene 1: PCM Crate -->
+      <section class="scroll-chapter active" id="chapter-opening">
+        <div class="chapter-content panel-left">
+          <span class="chapter-tag">01 · Smart PCM Crate</span>
+          <h2>Self-Intelligent<br>Cold Box</h2>
+          <p class="chapter-highlight">PCM = Phase Change Material. While melting at a precise temperature, it absorbs heat and keeps the inside constant — no power required.</p>
+          
+          <div class="info-rows">
+            <div class="info-row">
+              <span class="info-label">Temp</span>
+              <span class="info-value blue">4.1 °C</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Cooling Left</span>
+              <span class="info-value">18 hrs</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">PCM Health</span>
+              <span class="info-value green">85%</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Spoilage Risk</span>
+              <span class="info-value green">Low</span>
+            </div>
+          </div>
+
+          <div class="layer-chips">
+            <div class="chip">🧊 Thermal Insulation + PCM Panels</div>
+            <div class="chip">⚡ ESP32 + Sensors</div>
+            <div class="chip">🤖 AI Shelf-Life Prediction</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scene 2: Smart Tag -->
+      <section class="scroll-chapter" id="chapter-exploded">
+        <div class="chapter-content panel-right">
+          <span class="chapter-tag">02 · Smart Tag</span>
+          <h2>Fitbit for<br>a Shipment</h2>
+          <p class="chapter-highlight">Attached to crates, pallets, and vaccine boxes — it continuously streams telemetry to the cloud.</p>
+          
+          <div class="tag-specs-grid">
+            <div class="spec-pill">GPS Module</div>
+            <div class="spec-pill">ESP32</div>
+            <div class="spec-pill">BME280 Temp</div>
+            <div class="spec-pill">MPU6050 Shock</div>
+            <div class="spec-pill">LoRa / 4G</div>
+            <div class="spec-pill">Light Sensor</div>
+            <div class="spec-pill">3.7V Battery</div>
+          </div>
+
+          <div class="monitors-list">
+            <div class="monitor-item">🌡️ Temperature &amp; Humidity</div>
+            <div class="monitor-item">⚡ Shock &amp; Vibration</div>
+            <div class="monitor-item">📍 Real-Time GPS</div>
+            <div class="monitor-item">🔓 Tamper Detection</div>
+          </div>
+
+          <div class="cost-badge">₹1,200 – ₹1,500 mfg cost</div>
+        </div>
+      </section>
+
+      <!-- Scene 3: Truck / Route -->
+      <section class="scroll-chapter" id="chapter-route">
+        <div class="chapter-content panel-left">
+          <span class="chapter-tag">03 · Live Route Tracking</span>
+          <h2>Bhubaneswar<br>→ Delhi</h2>
+          <p class="chapter-highlight">Telemetry is streamed every 60 seconds via LoRa / 4G. AI engine detects excursions in real-time.</p>
+          
+          <div class="route-visual">
+            <div class="rv-node done">✓ Bhubaneswar</div>
+            <div class="rv-line"></div>
+            <div class="rv-node alert">⚠ Kolkata</div>
+            <div class="rv-line"></div>
+            <div class="rv-node pending">○ Delhi</div>
+          </div>
+
+          <div class="alert-box">
+            <div class="alert-row"><span>Temp</span><span class="danger">7 °C (limit 2–8)</span></div>
+            <div class="alert-row"><span>Shock</span><span class="danger">HIGH</span></div>
+            <div class="alert-row"><span>Action</span><span class="safe">AI Rerouting…</span></div>
+          </div>
+
+          <div class="route-graph-container" style="display:none;">
+            <canvas id="route-temp-graph" width="280" height="120"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scene 4–7 kept for scroll pacing, no visible content -->
+      <section class="scroll-chapter" id="chapter-storm">
+        <div class="chapter-content panel-right">
+          <span class="chapter-tag">04 · Scale</span>
+          <h2>India's Cold Chain<br>Intelligence Grid</h2>
+          <p class="chapter-highlight">Thousands of devices, one platform — monitoring, predicting, and preventing losses across the supply chain.</p>
+          <div class="stat-trio">
+            <div class="st-item"><span class="st-num">500K+</span><span class="st-lbl">Active Tags</span></div>
+            <div class="st-item"><span class="st-num">50K+</span><span class="st-lbl">Smart Crates</span></div>
+            <div class="st-item"><span class="st-num">100M+</span><span class="st-lbl">Products Protected</span></div>
+          </div>
+          <!-- Keep hidden elements for JS references -->
+          <div style="display:none;">
+            <span id="risk-percent-val">78%</span>
+            <div id="risk-bar-fill"></div>
+            <div id="action-alert-msg"></div>
+            <div id="risk-status-text"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scene 5: Final CTA -->
+      <section class="scroll-chapter" id="chapter-scale">
+      <!-- Scene 6+7: Final CTA -->
+      <section class="scroll-chapter" id="chapter-showcase" style="opacity:0;pointer-events:none;height:1px;"></section>
+
+      <section class="scroll-chapter" id="chapter-transition">
+        <div class="chapter-content panel-center">
+          <span class="chapter-tag">04 · Platform</span>
+          <h2>Cold Chain<br>Intelligence Ecosystem</h2>
+          <p class="chapter-highlight">Smart Tag tracks &amp; streams. Smart Crate protects &amp; predicts. Together they eliminate cold chain losses.</p>
+          <div class="ecosystem-duo">
+            <div class="eco-card">
+              <div class="eco-icon">🏷️</div>
+              <div class="eco-title">Smart Tag</div>
+              <div class="eco-desc">Tracks &amp; streams live telemetry</div>
+            </div>
+            <div class="eco-plus">+</div>
+            <div class="eco-card">
+              <div class="eco-icon">📦</div>
+              <div class="eco-title">Smart Crate</div>
+              <div class="eco-desc">Protects &amp; predicts shelf life</div>
+            </div>
+          </div>
+          <button class="launch-dashboard-btn" id="launch-dashboard-btn">
+            Enter Live Dashboard Console
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- Wrapper for existing Dashboard -->
+  <div id="dashboard-app" class="hidden">
 
   <!-- Top Navigation -->
   <header>
     <div class="logo-container">
-      <div class="logo-logo">P</div>
+      <img src="logo.png" class="logo-logo" alt="Logo">
       <span class="logo-text">PreservAI</span>
     </div>
     
@@ -31,7 +247,7 @@
         Shipments
       </div>
       <div class="nav-item" data-tab="tags">
-        <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
         Smart Tags
       </div>
       <div class="nav-item" data-tab="crates">
@@ -952,6 +1168,7 @@
     <div class="footer-title">PreservAI Dashboard Console</div>
     <div>AI Powered Cold Chain Prevention & Intelligence Platform &copy; 2026. All rights reserved.</div>
   </footer>
+  </div>
 
   <!-- Scripts -->
   <script src="mockData.js"></script>

@@ -1,0 +1,8 @@
+.env
+venv/
+.venv/
+__pycache__/
+*.pyc
+subscriptions.txt
+.DS_Store
+node_modules/

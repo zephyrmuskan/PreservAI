@@ -38,6 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initAnalyticsCharts();
   initSimulation();
   initEventListeners();
+  initLandingPageAndDemo();
   
   // Initial UI draw
   updateUI();
@@ -85,7 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     const tileUrl = activeTheme === "dark" 
       ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-      : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+      : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
       
     const attribution = activeTheme === "dark"
       ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -1026,6 +1027,25 @@ document.addEventListener("DOMContentLoaded", () => {
         submitAiMessage();
       });
     });
+
+    // Chrome-like keyboard tab switching
+    document.addEventListener("keydown", (e) => {
+      const dashboardApp = document.getElementById("dashboard-app");
+      if (dashboardApp && !dashboardApp.classList.contains("hidden")) {
+        const tabs = ["dashboard", "shipments", "tags", "crates", "analytics", "alerts", "health", "settings"];
+        let currentIndex = tabs.indexOf(activeTab);
+        
+        if ((e.ctrlKey && e.key === "Tab") || (e.altKey && e.key === "ArrowRight")) {
+          e.preventDefault();
+          currentIndex = (currentIndex + 1) % tabs.length;
+          switchTab(tabs[currentIndex]);
+        } else if ((e.ctrlKey && e.shiftKey && e.key === "Tab") || (e.altKey && e.key === "ArrowLeft")) {
+          e.preventDefault();
+          currentIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+          switchTab(tabs[currentIndex]);
+        }
+      }
+    });
   }
 
   function submitAiMessage() {
@@ -1117,4 +1137,773 @@ document.addEventListener("DOMContentLoaded", () => {
             <b>${state.shipments.filter(s => s.status === 'Critical').length}</b> critical node. 
             The general compliance score is holding stable at <b>96.8%</b>.`;
   }
+
+  // ==========================================================================
+  // PRESERVAI LANDING PAGE & 3D IMMERSIVE DEMO LOGIC
+  // ==========================================================================
+
+  // Three.js instances and loops
+  let threeRenderer = null;
+  let threeScene = null;
+  let threeCamera = null;
+  let threeAnimFrameId = null;
+  
+  // Three.js groups
+  let crateGroup = null;
+  let partsGroup = null;
+  let routeGroup = null;
+  let scaleGroup = null;
+  let pipelineGroup = null;
+  let stormParticles = null;
+  let dataPacket = null;
+  
+  // Exploded crate panels reference
+  let cratePanels = [];
+  
+  // Interactive Showcase state
+  let activeShowcaseProduct = "tag"; // "tag" or "crate"
+  let activePipelineNode = "tag";
+  
+  // Scroll LERPing
+  let scrollTarget = 0;
+  let scrollCurrent = 0;
+  
+  // Canvas Graph instance for Scene 3
+  let tempGraphCanvas = null;
+  let tempGraphCtx = null;
+  let graphData = [];
+  
+  function initLandingPageAndDemo() {
+    // 1. Setup subscription form
+    const subForm = document.getElementById("beta-subscribe-form");
+    const subEmail = document.getElementById("subscribe-email");
+    const subMsg = document.getElementById("subscribe-msg");
+    
+    if (subForm) {
+      subForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = subEmail.value;
+        subMsg.textContent = "Connecting to PreservAI network...";
+        subMsg.className = "subscribe-msg";
+        
+        try {
+          const response = await fetch("/api/subscribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email })
+          });
+          
+          const data = await response.json();
+          if (response.ok) {
+            subMsg.textContent = data.message || "Beta registration successful!";
+            subMsg.className = "subscribe-msg success";
+            subEmail.value = "";
+          } else {
+            subMsg.textContent = data.detail || "Beta registration failed.";
+            subMsg.className = "subscribe-msg error";
+          }
+        } catch (err) {
+          subMsg.textContent = "Error submitting subscription. Please check connectivity.";
+          subMsg.className = "subscribe-msg error";
+        }
+      });
+    }
+    
+    // 2. Setup interactive triggers
+    const enterDemoBtn = document.getElementById("enter-demo-btn");
+    const launchDashboardBtn = document.getElementById("launch-dashboard-btn");
+    const exitDemoBtn = document.getElementById("exit-demo-btn");
+    
+    if (enterDemoBtn) {
+      enterDemoBtn.addEventListener("click", () => {
+        document.getElementById("launching-soon-overlay").classList.add("hidden");
+        document.getElementById("immersive-demo-container").classList.remove("hidden");
+        document.body.classList.remove("landing-active");
+        document.body.classList.add("demo-active");
+        
+        // Reset scroll position
+        const container = document.getElementById("immersive-demo-container");
+        container.scrollTop = 0;
+        scrollTarget = 0;
+        scrollCurrent = 0;
+        countersAnimated = false;
+        
+        startThreeDemo();
+      });
+    }
+    
+    if (launchDashboardBtn) {
+      launchDashboardBtn.addEventListener("click", () => {
+        switchToDashboard();
+      });
+    }
+    
+    if (exitDemoBtn) {
+      exitDemoBtn.addEventListener("click", () => {
+        stopThreeDemo();
+        document.getElementById("immersive-demo-container").classList.add("hidden");
+        document.getElementById("launching-soon-overlay").classList.remove("hidden");
+        document.body.classList.remove("demo-active");
+        document.body.classList.add("landing-active");
+      });
+    }
+    
+    // 3. Showcase & Pipeline Tab registers
+    const btnTag = document.getElementById("btn-prod-tag");
+    const btnCrate = document.getElementById("btn-prod-crate");
+    const productDesc = document.getElementById("product-desc");
+    
+    if (btnTag && btnCrate) {
+      btnTag.addEventListener("click", () => {
+        btnTag.classList.add("active");
+        btnCrate.classList.remove("active");
+        activeShowcaseProduct = "tag";
+        productDesc.innerHTML = `<strong>Smart Tag:</strong> Interactive 3D sensor tag. Hover/tap on the 3D model to trigger the exploded view and examine the integrated GPS, ESP32, and multi-sensor configurations.`;
+      });
+      
+      btnCrate.addEventListener("click", () => {
+        btnCrate.classList.add("active");
+        btnTag.classList.remove("active");
+        activeShowcaseProduct = "crate";
+        productDesc.innerHTML = `<strong>Smart PCM Crate:</strong> Openable thermal-shield crate. Hover/tap to animate the opening sequence and reveal the active PCM panels, backup battery cartridge, and integrated solar harvesting receptors.`;
+      });
+    }
+    
+    const pipeNodes = document.querySelectorAll(".pipe-node");
+    pipeNodes.forEach(node => {
+      node.addEventListener("click", () => {
+        pipeNodes.forEach(n => n.classList.remove("active"));
+        node.classList.add("active");
+        activePipelineNode = node.getAttribute("data-node");
+      });
+    });
+    
+    // 4. Scroll monitoring
+    const demoContainer = document.getElementById("immersive-demo-container");
+    if (demoContainer) {
+      demoContainer.addEventListener("scroll", () => {
+        const scrollTop = demoContainer.scrollTop;
+        const scrollHeight = demoContainer.scrollHeight - demoContainer.clientHeight;
+        scrollTarget = scrollTop / (scrollHeight || 1);
+        
+        // Update progress bar
+        const progressBar = document.getElementById("demo-progress-bar");
+        if (progressBar) {
+          progressBar.style.width = (scrollTarget * 100) + "%";
+        }
+        
+        // Update chapter active classes
+        const chapters = document.querySelectorAll(".scroll-chapter");
+        let activeIdx = 0;
+        chapters.forEach((chapter, index) => {
+          const rect = chapter.getBoundingClientRect();
+          if (rect.top <= window.innerHeight * 0.5 && rect.bottom >= window.innerHeight * 0.5) {
+            chapter.classList.add("active");
+            activeIdx = index;
+          } else {
+            chapter.classList.remove("gray-active");
+            chapter.classList.remove("active");
+          }
+        });
+        
+        if (activeIdx === 4) {
+          animateCounters();
+        }
+      });
+    }
+  }
+  
+  function switchToDashboard() {
+    stopThreeDemo();
+    document.getElementById("immersive-demo-container").classList.add("hidden");
+    document.getElementById("launching-soon-overlay").classList.add("hidden");
+    document.body.classList.remove("landing-active");
+    document.body.classList.remove("demo-active");
+    
+    const dashboardApp = document.getElementById("dashboard-app");
+    dashboardApp.classList.remove("hidden");
+    
+    // Invalidate Leaflet Map size to render correctly
+    if (mapInstance) {
+      setTimeout(() => {
+        mapInstance.invalidateSize();
+        mapInstance.setView([21.7679, 78.8718], 5);
+      }, 150);
+    }
+  }
+
+  function startThreeDemo() {
+    const canvas = document.getElementById("three-canvas");
+    if (!canvas) return;
+
+    // Renderer
+    threeRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+    threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    threeRenderer.setSize(window.innerWidth, window.innerHeight);
+    threeRenderer.setClearColor(0x02040a, 1);
+    threeRenderer.shadowMap.enabled = true;
+    threeRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    threeRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+    threeRenderer.toneMappingExposure = 1.1;
+
+    // Scene
+    threeScene = new THREE.Scene();
+
+    // Camera — angled above, looking down at origin (like a stage view)
+    threeCamera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 200);
+    threeCamera.position.set(0, 5.5, 10);
+    threeCamera.lookAt(0, 0, 0);
+
+    // ─── LIGHTS ───────────────────────────────────────────────────
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    threeScene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    keyLight.position.set(6, 12, 8);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.set(2048, 2048);
+    keyLight.shadow.camera.near = 0.1;
+    keyLight.shadow.camera.far = 50;
+    keyLight.shadow.camera.left = -10;
+    keyLight.shadow.camera.right = 10;
+    keyLight.shadow.camera.top = 10;
+    keyLight.shadow.camera.bottom = -10;
+    threeScene.add(keyLight);
+
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.6);
+    rimLight.position.set(-8, 3, -6);
+    threeScene.add(rimLight);
+
+    const fillLight = new THREE.PointLight(0x2dd4bf, 1.5, 20);
+    fillLight.position.set(-3, 4, 4);
+    threeScene.add(fillLight);
+
+    // ─── SPACE STARFIELD ───────────────────────────────────────────
+    const starCount = 1800;
+    const starPositions = new Float32Array(starCount * 3);
+    const starSizes = new Float32Array(starCount);
+    for (let i = 0; i < starCount; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r = 60 + Math.random() * 60;
+      starPositions[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
+      starPositions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+      starPositions[i * 3 + 2] = r * Math.cos(phi);
+      starSizes[i] = 0.05 + Math.random() * 0.15;
+    }
+    const starsGeo = new THREE.BufferGeometry();
+    starsGeo.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
+    starsGeo.setAttribute("size", new THREE.BufferAttribute(starSizes, 1));
+    const starsMat = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.18,
+      sizeAttenuation: true,
+      transparent: true,
+      opacity: 0.85
+    });
+    const starField = new THREE.Points(starsGeo, starsMat);
+    starField.name = "starfield";
+    threeScene.add(starField);
+
+    // Nebula / glow clouds (large colored points far away)
+    const nebulaColors = [0x1e3a8a, 0x0c4a6e, 0x134e4a, 0x1a1a3e];
+    nebulaColors.forEach((col, ci) => {
+      const ng = new THREE.BufferGeometry();
+      const np = new Float32Array(60 * 3);
+      for (let i = 0; i < 60; i++) {
+        np[i*3]   = (Math.random()-0.5) * 80 + (ci % 2 === 0 ? -30 : 30);
+        np[i*3+1] = (Math.random()-0.5) * 40;
+        np[i*3+2] = -40 + (Math.random()-0.5) * 30;
+      }
+      ng.setAttribute("position", new THREE.BufferAttribute(np, 3));
+      const nm = new THREE.PointsMaterial({ color: col, size: 3.5, transparent: true, opacity: 0.18, sizeAttenuation: true });
+      threeScene.add(new THREE.Points(ng, nm));
+    });
+
+    // ─── WHITE PLANE (the stage) ───────────────────────────────────
+    // Physical white plane — the "paper" the objects sit on
+    const planeGeo = new THREE.PlaneGeometry(12, 8, 1, 1);
+    const planeMat = new THREE.MeshStandardMaterial({
+      color: 0xfafafa,
+      roughness: 0.6,
+      metalness: 0.0,
+    });
+    const planeMesh = new THREE.Mesh(planeGeo, planeMat);
+    planeMesh.rotation.x = -Math.PI / 2;
+    planeMesh.position.y = -0.01;
+    planeMesh.receiveShadow = true;
+    planeMesh.name = "stage";
+    threeScene.add(planeMesh);
+
+    // Subtle grid lines on the plane (dark/black, thin)
+    const gridHelper = new THREE.GridHelper(12, 24, 0x000000, 0x222222);
+    gridHelper.position.y = 0.002;
+    gridHelper.material.transparent = true;
+    gridHelper.material.opacity = 0.12;
+    threeScene.add(gridHelper);
+
+    // Plane border glow (thin emissive edges)
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.35 });
+    const edgePoints = [
+      new THREE.Vector3(-6, 0.01, -4),
+      new THREE.Vector3( 6, 0.01, -4),
+      new THREE.Vector3( 6, 0.01,  4),
+      new THREE.Vector3(-6, 0.01,  4),
+      new THREE.Vector3(-6, 0.01, -4),
+    ];
+    const edgeGeo = new THREE.BufferGeometry().setFromPoints(edgePoints);
+    threeScene.add(new THREE.Line(edgeGeo, edgeMat));
+
+    // ─── BUILD 3D OBJECTS ─────────────────────────────────────────
+    buildPCMCrate();   // Scene 1
+    buildSmartTag();   // Scene 2
+    buildTruck3D();    // Scene 3
+
+    // Start loop
+    graphData = [];
+    tempGraphCanvas = document.getElementById("route-temp-graph");
+    if (tempGraphCanvas) tempGraphCtx = tempGraphCanvas.getContext("2d");
+
+    window.addEventListener("resize", onThreeResize);
+    animateThree(0);
+  }
+
+  function stopThreeDemo() {
+    if (threeAnimFrameId) {
+      cancelAnimationFrame(threeAnimFrameId);
+      threeAnimFrameId = null;
+    }
+    window.removeEventListener("resize", onThreeResize);
+    threeRenderer = null;
+    threeScene = null;
+    threeCamera = null;
+  }
+
+  function onThreeResize() {
+    if (!threeCamera || !threeRenderer) return;
+    threeCamera.aspect = window.innerWidth / window.innerHeight;
+    threeCamera.updateProjectionMatrix();
+    threeRenderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  // ─── PCM CRATE ─────────────────────────────────────────────────
+  function buildPCMCrate() {
+    crateGroup = new THREE.Group();
+    crateGroup.name = "crateGroup";
+    crateGroup.position.set(0, 10, 0); // start offscreen above
+    threeScene.add(crateGroup);
+
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: 0x0369a1,
+      roughness: 0.3,
+      metalness: 0.15,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.08
+    });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.6, 1.6), bodyMat);
+    body.castShadow = true;
+    body.receiveShadow = true;
+    crateGroup.add(body);
+
+    // PCM layer bands (horizontal stripes)
+    const bandMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.4 });
+    [-0.35, 0.35].forEach(y => {
+      const band = new THREE.Mesh(new THREE.BoxGeometry(2.22, 0.12, 1.62), bandMat);
+      band.position.y = y;
+      band.castShadow = true;
+      crateGroup.add(band);
+    });
+
+    // Lid (top)
+    const lidMat = new THREE.MeshStandardMaterial({ color: 0x0c4a6e, roughness: 0.2, metalness: 0.3 });
+    const lid = new THREE.Mesh(new THREE.BoxGeometry(2.24, 0.18, 1.64), lidMat);
+    lid.position.y = 0.89;
+    lid.castShadow = true;
+    crateGroup.add(lid);
+
+    // Handle
+    const handleMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.2 });
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.5, 8), handleMat);
+    handle.rotation.z = Math.PI / 2;
+    handle.position.set(0, 1.06, 0);
+    crateGroup.add(handle);
+
+    // Corner guards (yellow)
+    const guardMat = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.5 });
+    [[1.1,-0.79,0.8],[1.1,-0.79,-0.8],[-1.1,-0.79,0.8],[-1.1,-0.79,-0.8]].forEach(([x,y,z]) => {
+      const g = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.08), guardMat);
+      g.position.set(x,y,z);
+      crateGroup.add(g);
+    });
+
+    // LED indicator (glowing green dot)
+    const ledMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x22c55e, emissiveIntensity: 2.0 });
+    const led = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), ledMat);
+    led.position.set(0.95, 0.0, 0.82);
+    crateGroup.add(led);
+
+    // Bottom feet
+    const footMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
+    [[-0.8,-0.85,0.6],[0.8,-0.85,0.6],[-0.8,-0.85,-0.6],[0.8,-0.85,-0.6]].forEach(([x,y,z]) => {
+      const f = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.1, 0.18), footMat);
+      f.position.set(x,y,z);
+      crateGroup.add(f);
+    });
+
+    crateGroup.position.set(0, 12, 0);
+  }
+
+  // ─── SMART TAG ─────────────────────────────────────────────────
+  function buildSmartTag() {
+    partsGroup = new THREE.Group();
+    partsGroup.name = "tagGroup";
+    partsGroup.position.set(-15, 0.5, 0); // start offscreen left
+    threeScene.add(partsGroup);
+
+    // Main PCB board (slim rectangular)
+    const pcbMat = new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.7, metalness: 0.1 });
+    const pcb = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.06, 2.0), pcbMat);
+    pcb.castShadow = true;
+    pcb.receiveShadow = true;
+    partsGroup.add(pcb);
+
+    // Outer casing (transparent plastic shell)
+    const casingMat = new THREE.MeshPhysicalMaterial({
+      color: 0x0ea5e9,
+      roughness: 0.1,
+      metalness: 0.0,
+      transmission: 0.55,
+      transparent: true,
+      opacity: 0.45,
+      ior: 1.4,
+      thickness: 0.5,
+      side: THREE.DoubleSide
+    });
+    const casing = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.28, 2.1), casingMat);
+    casing.position.y = 0.05;
+    partsGroup.add(casing);
+
+    // Chips on PCB
+    const chipDefs = [
+      { name:"esp32",  color: 0x1e293b, size:[0.38,0.06,0.38], pos:[ 0.2, 0.06, 0.0] },
+      { name:"gps",    color: 0x2dd4bf, size:[0.25,0.07,0.25], pos:[-0.35,0.06,-0.55] },
+      { name:"bme",    color: 0x94a3b8, size:[0.18,0.06,0.18], pos:[ 0.4, 0.06,-0.55] },
+      { name:"mpu",    color: 0x3b82f6, size:[0.22,0.06,0.22], pos:[-0.35,0.06, 0.5] },
+      { name:"lora",   color: 0xb45309, size:[0.32,0.08,0.32], pos:[ 0.38,0.06, 0.55] },
+    ];
+    chipDefs.forEach(c => {
+      const m = new THREE.MeshStandardMaterial({ color: c.color, emissive: c.color, emissiveIntensity: 0.25, roughness: 0.3 });
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(...c.size), m);
+      mesh.name = c.name;
+      mesh.position.set(...c.pos);
+      mesh.castShadow = true;
+      partsGroup.add(mesh);
+    });
+
+    // Battery (silver pill)
+    const battMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.8, roughness: 0.2 });
+    const batt = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.9, 16), battMat);
+    batt.rotation.z = Math.PI / 2;
+    batt.position.set(-0.36, 0.06, -0.1);
+    batt.castShadow = true;
+    partsGroup.add(batt);
+
+    // Antenna wire (thin line)
+    const antPoints = [
+      new THREE.Vector3(0.6, 0.12, -0.9),
+      new THREE.Vector3(0.6, 0.12, -1.3),
+      new THREE.Vector3(0.85, 0.12, -1.3),
+    ];
+    const antGeo = new THREE.BufferGeometry().setFromPoints(antPoints);
+    const antMat = new THREE.LineBasicMaterial({ color: 0xfbbf24 });
+    partsGroup.add(new THREE.Line(antGeo, antMat));
+
+    // Status LEDs
+    [[0.55,0.12,0.85],[0.55,0.12,0.65]].forEach((pos, i) => {
+      const lm = new THREE.MeshStandardMaterial({
+        color: i === 0 ? 0x22c55e : 0x3b82f6,
+        emissive: i === 0 ? 0x22c55e : 0x3b82f6,
+        emissiveIntensity: 2.5
+      });
+      const l = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), lm);
+      l.position.set(...pos);
+      partsGroup.add(l);
+    });
+
+    // Serial number label geometry (flat black strip)
+    const labelMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
+    const label = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.01, 0.18), labelMat);
+    label.position.set(-0.1, 0.036, 0.85);
+    partsGroup.add(label);
+
+    partsGroup.rotation.x = -Math.PI / 2; // Lay flat
+    partsGroup.position.set(-20, 0.15, 0);
+  }
+
+  // ─── TRUCK ─────────────────────────────────────────────────────
+  function buildTruck3D() {
+    routeGroup = new THREE.Group();
+    routeGroup.name = "truckGroup";
+    routeGroup.position.set(20, 0, 0); // start offscreen right
+    threeScene.add(routeGroup);
+
+    // ── Chassis
+    const chassisMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+    const chassis = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.18, 1.2), chassisMat);
+    chassis.position.set(0, 0.09, 0);
+    chassis.castShadow = true;
+    routeGroup.add(chassis);
+
+    // ── Cabin (white)
+    const cabMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.25, metalness: 0.05 });
+    const cab = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.2, 1.15), cabMat);
+    cab.position.set(1.25, 0.78, 0);
+    cab.castShadow = true;
+    routeGroup.add(cab);
+
+    // Windshield (glass)
+    const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x0284c7, roughness: 0.05, transmission: 0.7, transparent: true, opacity: 0.6, ior: 1.5 });
+    const windshield = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.65, 0.92), glassMat);
+    windshield.position.set(1.81, 0.92, 0);
+    routeGroup.add(windshield);
+
+    // Side windows
+    const sideWin = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.38, 0.06), glassMat);
+    [-0.575, 0.575].forEach(z => {
+      const w = sideWin.clone();
+      w.position.set(1.25, 0.98, z);
+      routeGroup.add(w);
+    });
+
+    // ── Cargo Container (blue with PreservAI branding)
+    const cargoMat = new THREE.MeshStandardMaterial({
+      color: 0x0369a1,
+      roughness: 0.4,
+      metalness: 0.15,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.08
+    });
+    const cargo = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.35, 1.16), cargoMat);
+    cargo.position.set(-0.5, 0.845, 0);
+    cargo.castShadow = true;
+    routeGroup.add(cargo);
+
+    // Yellow stripe on cargo
+    const stripeMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.09, 1.17), stripeMat);
+    stripe.position.set(-0.5, 0.6, 0);
+    routeGroup.add(stripe);
+
+    // Door seam (back)
+    const seamMat = new THREE.LineBasicMaterial({ color: 0x93c5fd, transparent: true, opacity: 0.6 });
+    const seamPoints = [new THREE.Vector3(-1.8,0.18,-0.58), new THREE.Vector3(-1.8,1.515,-0.58), new THREE.Vector3(-1.8,1.515,0.58), new THREE.Vector3(-1.8,0.18,0.58)];
+    const seamGeo = new THREE.BufferGeometry().setFromPoints(seamPoints);
+    routeGroup.add(new THREE.Line(seamGeo, seamMat));
+
+    // ── Wheels (6 wheels: 2 front + 4 rear dual axle)
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
+    const hubMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.85, roughness: 0.15 });
+    const wheelGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.25, 20);
+    const hubGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.27, 10);
+
+    const wheelDefs = [
+      // front
+      {x: 1.5, z: 0.63}, {x: 1.5, z: -0.63},
+      // mid rear pair
+      {x: -0.55, z: 0.73}, {x: -0.55, z: -0.73},
+      // back rear pair
+      {x: -1.3, z: 0.73}, {x: -1.3, z: -0.73},
+    ];
+    wheelDefs.forEach(({x,z}) => {
+      const w = new THREE.Mesh(wheelGeo, wheelMat);
+      w.rotation.x = Math.PI / 2;
+      w.position.set(x, 0.32, z);
+      w.castShadow = true;
+      const h = new THREE.Mesh(hubGeo, hubMat);
+      h.rotation.x = Math.PI / 2;
+      w.add(h);
+      routeGroup.add(w);
+    });
+
+    // ── Headlights
+    const hlMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xfef08a, emissiveIntensity: 3.0 });
+    [[1.87, 0.55, 0.38],[1.87, 0.55,-0.38]].forEach(([x,y,z]) => {
+      const hl = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.14, 0.2), hlMat);
+      hl.position.set(x,y,z);
+      routeGroup.add(hl);
+    });
+
+    // ── Exhaust pipe
+    const exhaustMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.6 });
+    const exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.65, 8), exhaustMat);
+    exhaust.position.set(0.7, 1.1, -0.62);
+    routeGroup.add(exhaust);
+
+    // ── Route path on the plane
+    const routePoints = [
+      new THREE.Vector3(-5.5, 0.015, 0),
+      new THREE.Vector3(-2, 0.015, 1.2),
+      new THREE.Vector3(0, 0.015, 0),
+      new THREE.Vector3(2, 0.015, -0.8),
+      new THREE.Vector3(5.5, 0.015, 0),
+    ];
+    const curve = new THREE.CatmullRomCurve3(routePoints);
+    const pathGeo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(80));
+    const pathMat = new THREE.LineDashedMaterial({ color: 0x38bdf8, linewidth: 1, dashSize: 0.18, gapSize: 0.1, transparent: true, opacity: 0.6 });
+    const pathLine = new THREE.Line(pathGeo, pathMat);
+    pathLine.computeLineDistances();
+    routeGroup.add(pathLine);
+
+    // City dots
+    const cityMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x22c55e, emissiveIntensity: 1.5 });
+    const dangerMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 2 });
+    routePoints.forEach((pt, i) => {
+      const dot = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 10), i === 2 ? dangerMat : cityMat);
+      dot.position.copy(pt);
+      dot.position.y = 0.1;
+      routeGroup.add(dot);
+    });
+
+    routeGroup.position.set(25, 0, 0);
+    stormParticles = null;
+  }
+
+  function drawRouteGraph(factor) {
+    if (!tempGraphCtx) return;
+    const canvas = tempGraphCanvas;
+    if (!canvas) return;
+    const w = canvas.width, h = canvas.height;
+    tempGraphCtx.clearRect(0, 0, w, h);
+    if (graphData.length === 0) {
+      for (let i = 0; i < 30; i++) {
+        graphData.push({ x: (i / 29) * w, y: h * 0.35 + Math.sin(i * 0.3) * h * 0.08 });
+      }
+    }
+    const drawLimit = Math.floor(Math.min(factor, 1.0) * graphData.length);
+    if (drawLimit < 2) return;
+    const isAlert = factor > 1.0;
+    tempGraphCtx.strokeStyle = isAlert ? "#ef4444" : "#38bdf8";
+    tempGraphCtx.lineWidth = 2;
+    tempGraphCtx.shadowColor = isAlert ? "#ef4444" : "#38bdf8";
+    tempGraphCtx.shadowBlur = 8;
+    tempGraphCtx.beginPath();
+    const points = graphData;
+    tempGraphCtx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < drawLimit; i++) {
+      tempGraphCtx.lineTo(points[i].x, points[i].y);
+    }
+    tempGraphCtx.stroke();
+  }
+
+  function smoothstep(edge0, edge1, x) {
+    const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+    return t * t * (3 - 2 * t);
+  }
+
+  // ─── ANIMATE THREE ─────────────────────────────────────────────
+  function animateThree(time) {
+    threeAnimFrameId = requestAnimationFrame(animateThree);
+    const timeSec = time * 0.001;
+
+    // Smooth scroll lerp
+    scrollCurrent += (scrollTarget - scrollCurrent) * 0.06;
+
+    // Slowly rotate starfield
+    const sf = threeScene ? threeScene.getObjectByName("starfield") : null;
+    if (sf) {
+      sf.rotation.y = timeSec * 0.008;
+      sf.rotation.x = Math.sin(timeSec * 0.004) * 0.02;
+    }
+
+    if (!crateGroup || !partsGroup || !routeGroup) {
+      if (threeRenderer && threeScene && threeCamera) threeRenderer.render(threeScene, threeCamera);
+      return;
+    }
+
+    const sc = scrollCurrent; // 0..1
+
+    // ─── 1. PCM CRATE POSITION & VISIBILITY ───
+    let crateX = 0;
+    let crateY = 0.82;
+    if (sc < 0.10) {
+      // Intro drop
+      const f = smoothstep(0, 0.10, sc);
+      crateY = 12 - 11.18 * f;
+    } else if (sc >= 0.25 && sc <= 0.40) {
+      // Slide out to left
+      const f = smoothstep(0.25, 0.40, sc);
+      crateX = -15 * f;
+    } else if (sc > 0.40) {
+      crateX = -15;
+    }
+    crateGroup.position.set(crateX, crateY, 0);
+    crateGroup.rotation.y = timeSec * 0.3;
+    crateGroup.visible = (crateX > -14);
+
+    // ─── 2. SMART TAG POSITION & VISIBILITY ───
+    let tagX = 15;
+    if (sc >= 0.25 && sc < 0.40) {
+      // Slide in from right
+      const f = smoothstep(0.25, 0.40, sc);
+      tagX = 15 - 15 * f;
+    } else if (sc >= 0.40 && sc < 0.60) {
+      tagX = 0;
+    } else if (sc >= 0.60 && sc <= 0.75) {
+      // Slide out to left
+      const f = smoothstep(0.60, 0.75, sc);
+      tagX = -15 * f;
+    } else if (sc > 0.75) {
+      tagX = -15;
+    }
+    partsGroup.position.set(tagX, 0.15, 0);
+    partsGroup.rotation.set(-Math.PI / 2, 0, timeSec * 0.25);
+    partsGroup.visible = (tagX > -14 && tagX < 14);
+
+    // ─── 3. TRUCK POSITION & VISIBILITY ───
+    let truckX = 15;
+    if (sc >= 0.60 && sc < 0.75) {
+      // Slide in from right
+      const f = smoothstep(0.60, 0.75, sc);
+      truckX = 15 - 15 * f;
+    } else if (sc >= 0.75) {
+      truckX = 0;
+    }
+    routeGroup.position.set(truckX, 0, 0);
+    
+    // Truck rotation: face straight left (Math.PI) while driving, slow spin during showcase
+    if (sc < 0.75) {
+      routeGroup.rotation.set(0, Math.PI, 0);
+      // Wheels rotate while moving
+      routeGroup.children.forEach(child => {
+        if (child instanceof THREE.Mesh && child.geometry instanceof THREE.CylinderGeometry) {
+          child.rotation.z = -timeSec * 5.0;
+        }
+      });
+    } else {
+      // Showcase spin
+      const rotationSpeed = (sc - 0.75) * 1.5 + timeSec * 0.12;
+      routeGroup.rotation.set(0, Math.PI + rotationSpeed, 0);
+      // Wheels stopped
+    }
+    routeGroup.visible = (truckX < 14);
+
+    // ─── CAMERA & ORBIT ───
+    if (sc < 0.75) {
+      // Settle camera on stage
+      threeCamera.position.set(Math.sin(timeSec * 0.15) * 0.2, 5.5 + Math.cos(timeSec * 0.25) * 0.1, 10);
+      threeCamera.lookAt(0, 0.4, 0);
+    } else {
+      // Orbital final stage showcase
+      const angle = Math.PI + timeSec * 0.15;
+      threeCamera.position.set(
+        Math.sin(angle) * 10,
+        5.5 + Math.sin(timeSec * 0.08) * 0.8,
+        Math.cos(angle) * 10
+      );
+      threeCamera.lookAt(0, 0.4, 0);
+    }
+
+    threeRenderer.render(threeScene, threeCamera);
+  }
 });
+

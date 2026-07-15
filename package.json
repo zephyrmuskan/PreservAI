@@ -1,0 +1,11 @@
+{
+  "name": "preservai",
+  "version": "1.0.0",
+  "description": "AI-Powered Cold Chain Platform",
+  "main": "app.js",
+  "scripts": {
+    "dev": "./venv/bin/python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
