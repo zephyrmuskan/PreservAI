@@ -1237,7 +1237,27 @@ document.addEventListener("DOMContentLoaded", () => {
         switchToDashboard();
       });
     }
-    
+
+    // Sign Out — return to landing page
+    const signoutBtn = document.getElementById("signout-btn");
+    if (signoutBtn) {
+      signoutBtn.addEventListener("click", () => {
+        const dashboardApp = document.getElementById("dashboard-app");
+        if (dashboardApp) dashboardApp.classList.add("hidden");
+        document.getElementById("launching-soon-overlay").classList.remove("hidden");
+        document.body.classList.add("landing-active");
+        document.body.classList.remove("demo-active");
+      });
+    }
+
+    // Landing page → Go to Dashboard
+    const landingDashboardBtn = document.getElementById("landing-dashboard-btn");
+    if (landingDashboardBtn) {
+      landingDashboardBtn.addEventListener("click", () => {
+        switchToDashboard();
+      });
+    }
+
     if (exitDemoBtn) {
       exitDemoBtn.addEventListener("click", () => {
         stopThreeDemo();
@@ -1245,6 +1265,32 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("launching-soon-overlay").classList.remove("hidden");
         document.body.classList.remove("demo-active");
         document.body.classList.add("landing-active");
+      });
+    }
+
+    // 2b. Setup products basket popup listeners
+    const cartBasketBtn = document.getElementById("cart-basket-btn");
+    const productsPopup = document.getElementById("products-popup");
+    const productsPopupClose = document.getElementById("products-popup-close");
+    
+    if (cartBasketBtn && productsPopup) {
+      cartBasketBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        productsPopup.classList.remove("hidden");
+      });
+    }
+    
+    if (productsPopupClose && productsPopup) {
+      productsPopupClose.addEventListener("click", () => {
+        productsPopup.classList.add("hidden");
+      });
+    }
+    
+    if (productsPopup) {
+      productsPopup.addEventListener("click", (e) => {
+        if (e.target === productsPopup) {
+          productsPopup.classList.add("hidden");
+        }
       });
     }
     

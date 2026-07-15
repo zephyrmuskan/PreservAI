@@ -7,3 +7,4 @@ subscriptions.txt
 .DS_Store
 node_modules/
 test_supabase.py
+.vercel
