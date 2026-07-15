@@ -6,7 +6,7 @@
       "use": "@vercel/python"
     },
     {
-      "src": "index.html",
+      "src": "*.{html,css,js,png,jpg,jpeg,svg,ico,webp}",
       "use": "@vercel/static"
     }
   ],
@@ -16,8 +16,7 @@
       "dest": "backend/main.py"
     },
     {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|svg|ico|woff|woff2|ttf|eot))",
-      "dest": "/$1"
+      "handle": "filesystem"
     },
     {
       "src": "/(.*)",
