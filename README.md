@@ -1,6 +1,6 @@
 # PreservAI – AI Powered Cold Chain Intelligence Platform 📦❄️
 
-🌐 **Live Demo**: [preservai.vercel.app](https://preservai.vercel.app)
+🌐 **Live Demo**: [preservai-app.vercel.app](https://preservai-app.vercel.app)
 
 PreservAI is a next-generation real-time cold chain monitoring, shelf-life prediction, and spoilage prevention platform designed for healthcare, food, and logistics sectors.
 
